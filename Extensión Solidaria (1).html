@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="es"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Extensión Solidaria</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#f0efe9;overflow:hidden;width:100vw;height:100vh}
+#wrap{width:100vw;height:100vh;overflow:hidden;position:relative;cursor:grab}
+#wrap.panning{cursor:grabbing}
+#cv{position:relative;width:2619.0012967857447px;height:2249.104066900729px;transform-origin:0 0;will-change:transform}
+svg#sl{position:absolute;top:0;left:0;width:2619.0012967857447px;height:2249.104066900729px;pointer-events:none;z-index:1;overflow:visible}
+.fn{position:absolute;cursor:pointer;user-select:none;transition:filter .15s;z-index:2}
+.fn:hover{filter:brightness(.96)}
+.fn svg.sh{position:absolute;top:0;left:0;width:100%;height:100%;overflow:visible;pointer-events:none}
+.fn .lw{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 12px;pointer-events:none}
+.fn[data-shape="diamond"] .lw{padding:16% 22%}
+.fn[data-shape="parallelogram"] .lw{padding:8px 22px}
+.fn[data-shape="hexagon"] .lw{padding:8px 18%}
+.nt{font-size:13px;font-weight:600;text-align:center;line-height:1.3;word-break:break-word}
+.ns{font-size:11px;text-align:center;margin-top:2px;opacity:.75;word-break:break-word}
+.db{position:absolute;bottom:-13px;left:50%;transform:translateX(-50%);
+  background:#1a1917;color:#fff;font-size:11px;font-weight:600;
+  padding:3px 9px;border-radius:20px;white-space:nowrap;pointer-events:none;
+  display:flex;align-items:center;gap:4px;z-index:25;box-shadow:0 1px 5px rgba(0,0,0,.25)}
+.db svg{width:11px;height:11px;opacity:.8}
+/* Sidebar */
+#sb{
+  position:fixed;right:0;top:0;bottom:0;width:360px;
+  background:#fff;border-left:1px solid #e8e8e5;
+  box-shadow:-4px 0 24px rgba(0,0,0,.09);
+  transform:translateX(100%);transition:transform .25s cubic-bezier(.4,0,.2,1);
+  z-index:90;display:flex;flex-direction:column;
+  font-family:'DM Sans',system-ui,sans-serif;
+}
+#sb.open{transform:translateX(0)}
+#sb-toggle{
+  position:absolute;left:-40px;top:50%;transform:translateY(-50%);
+  background:#fff;border:1px solid #e8e8e5;border-right:none;
+  border-radius:10px 0 0 10px;width:40px;height:52px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:-3px 0 10px rgba(0,0,0,.07);
+}
+#sb-toggle svg{transition:transform .25s;width:16px;height:16px;color:#888}
+#sb.open #sb-toggle svg{transform:rotate(180deg)}
+#sb-hd{padding:22px 22px 16px;border-bottom:1px solid #f0f0f0;flex-shrink:0}
+#sb-type{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#94b43b;margin-bottom:6px}
+#sb-title{font-size:30px;font-weight:800;color:#111;line-height:1.15;letter-spacing:-.03em;margin-bottom:4px}
+#sb-sub{font-size:13px;color:#888;margin-bottom:0}
+#sb-dur{display:none;align-items:center;gap:6px;margin-top:10px;font-size:12px;font-weight:600;color:#fff;background:#1a1917;padding:4px 12px;border-radius:20px;width:fit-content}
+#sb-dur svg{width:11px;height:11px;opacity:.8}
+#sb-body{overflow-y:auto;flex:1;padding-bottom:24px}
+#sb-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#ccc;font-size:13px;text-align:center;padding:32px;gap:10px;line-height:1.6}
+#sb-empty svg{width:32px;height:32px;opacity:.3}
+/* Section styles */
+.msec{background:#fff;border-bottom:1px solid #f0f0f0}
+.msec:last-child{border-bottom:none}
+.msec-hd{
+  display:flex;align-items:center;
+  padding:14px 22px 10px 19px;
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;
+  color:#94b43b;border-left:3px solid #94b43b;background:#fff
+}
+.msec-hd.alt{color:#a61c31;border-left-color:#a61c31}
+.msec-hd.neutral{color:#666;border-left-color:#ccc}
+.msec-bd{padding:10px 22px 18px 22px;font-size:13.5px;line-height:1.8;color:#222;white-space:pre-wrap}
+.msec-bd.empty{color:#bbb;font-style:italic;font-size:13px}
+.norm-item{display:flex;align-items:baseline;gap:10px;padding:5px 0;border-bottom:1px solid #f5f5f5;font-size:13px;color:#333}
+.norm-item:last-child{border-bottom:none;padding-bottom:0}
+.norm-item::before{content:'';display:inline-block;width:5px;height:5px;border-radius:50%;background:#a61c31;flex-shrink:0;margin-top:5px}
+/* Rich info lines */
+.iline{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid #f0f0f0;font-size:13.5px;line-height:1.7}
+.iline:last-child{border-bottom:none;padding-bottom:0}
+.iico{font-size:16px;flex-shrink:0;margin-top:2px}
+/* Startup hint toast */
+#hint-toast{
+  position:fixed;bottom:28px;left:50%;transform:translateX(-50%);
+  background:rgba(26,25,23,.88);color:#fff;
+  font-family:'DM Sans',system-ui,sans-serif;font-size:13px;font-weight:500;
+  padding:10px 20px;border-radius:24px;
+  display:flex;align-items:center;gap:9px;
+  box-shadow:0 4px 20px rgba(0,0,0,.22);
+  opacity:1;transition:opacity .6s;pointer-events:none;z-index:200;white-space:nowrap;
+}
+#hint-toast svg{width:15px;height:15px;opacity:.8;flex-shrink:0}
+#hint-toast.hidden{opacity:0}
+/* Hover tooltip */
+#tip{
+  position:fixed;pointer-events:none;z-index:150;
+  background:#fff;border:1px solid #e5e5e3;border-radius:10px;
+  box-shadow:0 4px 20px rgba(0,0,0,.13);
+  padding:12px 14px;min-width:180px;max-width:260px;
+  font-family:'DM Sans',system-ui,sans-serif;
+  opacity:0;transition:opacity .15s;
+}
+#tip.show{opacity:1}
+#tip-title{font-size:13px;font-weight:700;color:#1a1917;margin-bottom:3px;line-height:1.3}
+#tip-type{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#94b43b;margin-bottom:6px}
+#tip-dur{display:none;font-size:11.5px;color:#555;margin-bottom:5px;display:flex;align-items:center;gap:5px}
+#tip-dur svg{width:11px;height:11px;opacity:.7;flex-shrink:0}
+#tip-info{font-size:12px;color:#666;line-height:1.5;border-top:1px solid #f0f0f0;padding-top:6px;margin-top:2px;display:none}
+#tip-cta{font-size:11px;color:#aaa;margin-top:7px;display:flex;align-items:center;gap:4px}
+#tip-cta svg{width:10px;height:10px;opacity:.6}
+/* Left project sidebar */
+#lsb{
+  position:fixed;left:0;top:0;bottom:0;width:300px;
+  background:#fff;border-right:1px solid #e8e8e5;
+  box-shadow:4px 0 24px rgba(0,0,0,.08);
+  transform:translateX(-100%);transition:transform .25s cubic-bezier(.4,0,.2,1);
+  z-index:90;display:flex;flex-direction:column;
+  font-family:'DM Sans',system-ui,sans-serif;
+}
+#lsb.open{transform:translateX(0)}
+#lsb-toggle{
+  position:absolute;right:-40px;top:50%;transform:translateY(-50%);
+  background:#fff;border:1px solid #e8e8e5;border-left:none;
+  border-radius:0 10px 10px 0;width:40px;height:52px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:3px 0 10px rgba(0,0,0,.07);
+}
+#lsb-toggle svg{transition:transform .25s;width:16px;height:16px;color:#888}
+#lsb.open #lsb-toggle svg{transform:rotate(180deg)}
+#lsb-hd{
+  padding:28px 24px 20px;border-bottom:1px solid #f0f0f0;flex-shrink:0;
+  background:linear-gradient(135deg,#f9f9f7 0%,#fff 100%);
+}
+#lsb-proj-name{
+  font-size:22px;font-weight:800;color:#111;letter-spacing:-.03em;
+  line-height:1.15;margin-bottom:4px;word-break:break-word;
+}
+#lsb-proj-sub{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:#94b43b}
+#lsb-body{overflow-y:auto;flex:1;padding:8px 0 24px}
+.lsb-sec{padding:16px 24px;border-bottom:1px solid #f5f5f3}
+.lsb-sec:last-child{border-bottom:none}
+.lsb-sec-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#94b43b;margin-bottom:8px}
+.lsb-sec-lbl.alt{color:#a61c31}
+.lsb-sec-lbl.neutral{color:#888}
+.lsb-sec-val{font-size:13.5px;color:#222;line-height:1.7;white-space:pre-wrap}
+.lsb-sec-empty{font-size:13px;color:#bbb;font-style:italic}
+.lsb-pill{display:inline-flex;align-items:center;gap:6px;background:#f3f3f1;color:#555;font-size:12px;font-weight:500;padding:4px 10px;border-radius:20px}
+</style></head><body>
+<!-- Left project sidebar -->
+<div id="lsb">
+  <button id="lsb-toggle" onclick="toggleLsb()" title="Información del proyecto">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+  </button>
+  <div id="lsb-hd">
+    <div id="lsb-proj-sub">Proyecto</div>
+    <div id="lsb-proj-name">Extensión Solidaria</div>
+  </div>
+  <div id="lsb-body">
+    <div class="lsb-sec"><div class="lsb-sec-lbl">Descripción</div><div class="lsb-sec-val">La Extensión Solidaria comprende los programas y proyectos científicos, tecnológicos, artísticos y culturales de alto impacto social, que se desarrollan y financian total o  parcialmente con recursos de la Universidad. Por medio de esta modalidad se integran  los distintos campos del conocimiento y se estrechan vínculos con diversos sectores de la sociedad en busca de la inclusión social de comunidades vulnerables. </div></div>
+    <div class="lsb-sec"><div class="lsb-sec-lbl neutral">Responsable</div><div class="lsb-pill">Dirección de investigación y Extensión</div></div>
+    
+    
+    
+  </div>
+</div>
+<div id="hint-toast">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>
+  Haz clic en cualquier figura para ver su información detallada
+</div>
+<div id="tip">
+  <div id="tip-title"></div>
+  <div id="tip-type"></div>
+  <div id="tip-dur"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg><span id="tip-dur-txt"></span></div>
+  <div id="tip-info"></div>
+  <div id="tip-cta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>Clic para ver más</div>
+</div>
+<div id="wrap"><div id="cv"><svg id="sl"></svg></div></div>
+<div id="sb">
+  <button id="sb-toggle" onclick="toggleSb()" title="Mostrar / ocultar panel">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+  </button>
+  <div id="sb-empty">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M15 15l6 6M10 17A7 7 0 1 0 10 3a7 7 0 0 0 0 14z"/></svg>
+    Haz clic en una figura<br>para ver su información
+  </div>
+  <div id="sb-content" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+    <div id="sb-hd">
+      <div id="sb-type"></div>
+      <div id="sb-title"></div>
+      <div id="sb-sub"></div>
+      <div id="sb-dur">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+        <span id="sb-dur-txt"></span>
+      </div>
+    </div>
+    <div id="sb-body"></div>
+  </div>
+</div>
+<script>
+const PAL={"blue":{"fill":"#b8cce4","stroke":"#4472a8","text":"#111111","light":"#dce6f1"},"violet":{"fill":"#ccc0da","stroke":"#7460ac","text":"#111111","light":"#e2dced"},"green":{"fill":"#c6efce","stroke":"#376523","text":"#111111","light":"#ebf5eb"},"amber":{"fill":"#ffeb9c","stroke":"#9c7a00","text":"#111111","light":"#fff5cc"},"red":{"fill":"#ffc7ce","stroke":"#9c0006","text":"#111111","light":"#ffdde0"},"pink":{"fill":"#f4b8c1","stroke":"#8e3152","text":"#111111","light":"#fad7de"},"gray":{"fill":"#d9d9d9","stroke":"#767676","text":"#111111","light":"#f2f2f2"},"slate":{"fill":"#cbd5e1","stroke":"#475569","text":"#111111","light":"#e2e8f0"},"dark":{"fill":"#44546a","stroke":"#1f3864","text":"#ffffff","light":"#5a6e84"}};
+const nodes=[{"id":"n2","shape":"rect","color":"dark","title":"Reunión de kick-off con DIE, Financiera y Contratación","sub":"DIE - Dirección financiera - Director ","x":281.6916093607108,"y":632,"w":220,"h":92,"durVal":3,"durUnit":"d","info":"Solicitar en una sola reunión la ruta completa por escrito: todos los trámites previos, el proceso de catálogo presupuestal, el paso por Comité DIE y Consejo de Sede, los plazos del cierre financiero del año, y los calendarios de todos los comités internos.\n\nEs primordial la revisión de la ficha financiera y asignación de rubros. ","consideraciones":"En el caso real, la información sobre el paso por Consejo de Sede llegó en mayo de 2025 cuando el proceso llevaba meses. Una reunión de kick-off completa habría evitado ese retraso.","normativa":["Instructivo de ejecución CNES"]},{"id":"n3","shape":"diamond","color":"dark","title":"¿El proyecto involucra animales o comunidades étnicas?","sub":"Administrativo · Decisión","x":282.6916093607108,"y":789,"w":220,"h":100,"durVal":0,"durUnit":"min","info":"Si el proyecto trabaja con animales (incluyendo insectos criados en laboratorio): activar trámite ante Comité de Bioética.\n\nSi trabaja en territorio de comunidades indígenas, afro, raizales u otras: activar trámite de consulta previa ante la Vicerrectoría de Investigación → MinInterior.","consideraciones":"Ambos trámites son bloqueantes: sin ellos no puede firmarse el acta de inicio. Son los que más tiempo consumen y deben iniciarse el mismo día que se conozca el resultado.","normativa":["Términos de referencia Num. 17","Convenio 169 OIT / Ley 21 de 1991"]},{"id":"n4","shape":"rect","color":"red","title":"Consulta Aval ético — Comité ética","sub":"Director del Proyecto","x":282.6916093607108,"y":940,"w":220,"h":80,"durVal":16,"durUnit":"sem","info":"Enviar al comité: protocolo del proyecto, ficha Hermes, y documentación específica según el tipo de animal.\n\nPasos críticos:\n1. xxx\n2. Solicitar fecha de revisión por escrito\n3. Hacer seguimiento activo cada 2–3 semanas\n4. Una vez recibido el oficio de aval, cargarlo en Hermes (no basta con el documento físico)\n","consideraciones":"","normativa":["Términos de referencia Num. 17","Reglamento interno del Comité de Bioética FMVZ"]},{"id":"n5","shape":"rect","color":"red","title":"Consulta previa — determinación de procedencia (MinInterior)","sub":"Director del Proyecto","x":282.6916093607108,"y":1108,"w":220,"h":107,"durVal":12,"durUnit":"sem","info":"Enviar formato 'Solicitud de determinación de procedencia' a:\nvicinvest_nal@unal.edu.co y perminambiente@unal.edu.co\nCon copia a: dne_esolidaria@unal.edu.co\n\nAdjuntar ficha del proyecto Hermes y demás documentos requeridos.\n\nEl resultado puede ser 'no procede' o 'procede' — en este último caso el proceso ante el MinInterior puede extenderse meses o años.\n\n","consideraciones":"Si el resultado es 'procede', el proceso de consulta previa es complejo, costoso y puede durar más de un año. ","normativa":["Ley 21 de 1991","Convenio 169 OIT","Decreto 1585 de 2020"]},{"id":"n6","shape":"rect","color":"dark","title":"Solicitud de agendamiento en Comité de Investigación y Extensión","sub":"Director del Proyecto","x":282.6916093607108,"y":1311,"w":220,"h":80,"durVal":3,"durUnit":"d","info":"Enviar solicitud formal a la DIE de sede para agendar el proyecto en el Comité.\n\nLlevar:\n- Ficha presupuestal de Hermes\n- Todos los avales obtenidos\n- Resumen ejecutivo del proyecto\n\nEl comité tiene fechas fijas — solicitar con al menos 2 semanas de anticipación.","consideraciones":"","normativa":["Instructivo de ejecución CNES","Calendario del Comité de Investigación y Extensión de sede"]},{"id":"n7","shape":"rect","color":"dark","title":"Sesión del Comité de Investigación y Extensión","sub":"Comité de investigación y Extensión","x":283.6916093607108,"y":1431,"w":220,"h":87,"durVal":4,"durUnit":"sem","info":"La DIE lleva el proyecto al comité. Si hay observaciones, se devuelve al director para ajustes.\n\nSi hay aprobación, pasa a Consejo de Sede.\n\nEl director puede o no estar presente según la práctica de la sede.","consideraciones":"El ciclo del comité puede duplicar los tiempos si el proyecto es devuelto por observaciones. Presentar el proyecto completo y sin errores desde la primera sesión.","normativa":["Resolución del Comité de Investigación y Extensión de sede"]},{"id":"n8","shape":"rect","color":"dark","title":"Presentación ante Consejo de Sede","sub":"Consejo de sede","x":282.6916093607108,"y":1770,"w":220,"h":70,"durVal":6,"durUnit":"sem","info":"La DIE lleva el asunto al Consejo. Sesión de fechas fijas.\n\nPuede significar una espera adicional de 2–6 semanas sobre el Comité DIE.","consideraciones":"Este paso no siempre es conocido por los directores de proyecto al inicio. En el caso real fue una sorpresa que retrasó el proceso varios meses.","normativa":["Acuerdo del Consejo de Sede"]},{"id":"n10","shape":"rect","color":"gray","title":"Verificar disponibilidad de recursos en el fondo especial","sub":"Dirección Financiera","x":658.6916093607108,"y":208,"w":220,"h":80,"durVal":2,"durUnit":"d","info":"Confirmar con Presupuesto que los recursos de la Resolución de Rectoría (traslado) estén disponibles en la vigencia actual.\n\nSi hubo prórroga, verificar la resolución de reasignación.\n\nParalelo con la columna Administrativa desde semana 1.","consideraciones":"Este paso debe hacerse en paralelo con el kick-off. No esperar a tener todos los avales para revisar el estado de los recursos.","normativa":["Resolución de Rectoría (traslado de recursos)","Instructivo de ejecución CNES"]},{"id":"n11","shape":"diamond","color":"gray","title":"¿Hubo prórroga o retraso de vigencia anterior?","sub":"Financiero · Decisión","x":659.6916093607108,"y":356,"w":220,"h":100,"durVal":0,"durUnit":"min","info":"Si los recursos llegaron en año anterior y no se comprometieron, se necesita resolución de Rectoría de reasignación antes de continuar.","consideraciones":"Este punto puede generar demoras de semanas o meses si no se identifica a tiempo. Verificarlo desde el primer día.","normativa":["Resolución de Rectoría de reasignación"]},{"id":"n12","shape":"rect","color":"dark","title":"Reasignación de recursos — nueva Resolución de Rectoría","sub":"DIE , Dirección Financiera,  Director del Proyecto","x":659.6916093607108,"y":508,"w":220,"h":91,"durVal":8,"durUnit":"sem","info":"Si los recursos no están disponibles en la vigencia actual, se requiere una nueva resolución de Rectoría Nacional que reasigne los recursos.\n\nEste proceso pasa por la Dirección Financiera sede → Rectoría Nacional.","consideraciones":"No puede avanzarse en ningún trámite financiero mientras este paso esté pendiente. Es un bloqueante total para la apertura de QUIPU.","normativa":["Resolución de Rectoría Nacional","Circular financiera DNEIPI"]},{"id":"n13","shape":"rect","color":"dark","title":"Elaborar y validar catálogo presupuestal con Financiera","sub":"Director del Proyecto -  Director del Proyecto","x":659.6916093607108,"y":651,"w":220,"h":90,"durVal":2,"durUnit":"sem","info":"Revisar ítem por ítem el presupuesto aprobado con la Dirección Financiera de sede.\n\nVerificar que cada rubro tenga el código UNSPSC correcto para la contratación posterior.\n\nIdentificar rubros que requieran proceso de selección (cotizaciones, RUT, Cámara de Comercio).","consideraciones":"Errores en el catálogo pueden generar devoluciones desde Contratación semanas después. Invertir tiempo en esta validación ahorra mucho más tiempo adelante.","normativa":["Manual de contratación UNAL","Clasificador UNSPSC vigente"]},{"id":"n14","shape":"rect","color":"dark","title":"Ingresar presupuesto al Sistema Hermes","sub":"Dirección Financiera","x":659.6916093607108,"y":794,"w":220,"h":83,"durVal":3,"durUnit":"d","info":"Con el presupuesto validado, cargarlo en Hermes para obtener la ficha presupuestal que se llevará al Comité DIE.","consideraciones":"La ficha de Hermes es un requisito obligatorio para presentar el proyecto al Comité de Investigación y Extensión. Sin ella no puede agendarse la sesión.","normativa":["Sistema Hermes UNAL","Instructivo de ejecución CNES"]},{"id":"n17","shape":"rect","color":"dark","title":"Elaborar plan de ejecución presupuestal anual","sub":"Financiero · 1 semana","x":659.6916093607108,"y":1230,"w":220,"h":70,"durVal":1,"durUnit":"sem","info":"Calendarizar cuándo se ejecuta cada rubro, considerando los tiempos de trámite de cada tipo de compra o contrato.\n\nTener en cuenta la fecha de cierre financiero de la vigencia.","consideraciones":"Una ejecución presupuestal sin planificar puede llevar a acumulación de contratos en los últimos meses, saturando la oficina de Contratación y arriesgando el cierre financiero.","normativa":["Términos de referencia","Cronograma aprobado en Hermes"]},{"id":"n18","shape":"rect","color":"dark","title":"Cierre financiero anual — solicitar excedentes","sub":"UNIDAD NACIONAL ","x":659.6916093607108,"y":1359,"w":220,"h":80,"durVal":3,"durUnit":"mes","info":"Si hay saldo sin comprometer antes del cierre (oct–nov), solicitar excedente anticipado al jefe de la Unidad Administrativa.\n\nSi no se hace a tiempo, los recursos pueden bloquearse y requerir nueva resolución.","consideraciones":"Este riesgo se activa año a año durante la ejecución. Monitorear la ejecución presupuestal mensualmente y anticipar el cierre con al menos 2 meses.","normativa":["Circular de cierre financiero","Instructivo CNES"]},{"id":"n19","shape":"rect","color":"gray","title":"Verificar objeto social y documentos de proveedores","sub":"Ejecución · 2–4 semanas por proveedor","x":1456.1801593607108,"y":508,"w":220,"h":80,"durVal":4,"durUnit":"sem","info":"Revisar con Contratación que el RUT y Cámara de Comercio de cada proveedor correspondan a la actividad a contratar.\n\nIniciar este proceso antes de la firma del acta.\n\nParalelo con F4/F5.","consideraciones":"Iniciar la verificación de proveedores antes de tener el acta firmada. Si se espera al acta para empezar, se pierden semanas críticas.","normativa":["Manual de contratación UNAL","Ley 80 de 1993"]},{"id":"n20","shape":"diamond","color":"gray","title":"¿El proveedor puede ejecutar la actividad según su objeto social?","sub":"Ejecución · Decisión","x":1456.1801593607108,"y":652,"w":220,"h":113,"durVal":0,"durUnit":"min","info":"En la cámara de comercio se debe validar la actividad económica de la empresa. Si no coincide (ej. fundación sin objeto de obra civil), replantear el rubro o buscar otro proveedor.\n\nRediseño del presupuesto si es necesario.","consideraciones":"Una verificación tardía del objeto social puede obligar a modificaciones presupuestales que reinician parte del trámite administrativo.","normativa":["Manual de contratación UNAL","Cámara de Comercio del proveedor"]},{"id":"n21","shape":"rect","color":"gray","title":"Expedición de CDPs (Certificados de Disponibilidad Presupuestal)","sub":"DIE","x":1456.1801593607108,"y":1110,"w":220,"h":80,"durVal":1,"durUnit":"d","info":"Con la ficha activa en QUIPU, la Dir. Financiera expide CDP para cada contratación o compra.\n\nSin CDP no puede iniciarse ningún proceso de contratación.","consideraciones":"El CDP debe solicitarse con tiempo suficiente antes de cada contrato. No es un trámite inmediato — puede tomar varios días por cada uno.","normativa":["Sistema QUIPU UNAL","Estatuto de contratación UNAL"]},{"id":"n22","shape":"rect","color":"gray","title":"Proceso de contratación y vinculación de personas y servicios","sub":"Financiera y contratación","x":1456.1801593607108,"y":1244,"w":220,"h":80,"durVal":4,"durUnit":"sem","info":"Para cada contratista:\n- Cotización\n- Verificación documentos (Cám. Comercio, RUT, seguridad social, REDAM, declaración Ley 2013)\n- Firma OSE\n\nLa Oficina de Contratación valida todo.","consideraciones":"El proceso de contratación no puede paralelizarse con la ausencia del CDP. Planificar qué contratos se necesitan primero y gestionar sus CDPs prioritariamente.","normativa":["Estatuto de contratación UNAL","Ley 2013 de 2019","Resolución REDAM"]},{"id":"n25","shape":"rect","color":"gray","title":"Informes parciales en Hermes","sub":"Ejecución · Según cronograma aprobado","x":1456.1801593607108,"y":1539.2000000000003,"w":220,"h":70,"durVal":0,"durUnit":"min","info":"Reportes técnicos (avance de actividades, productos entregados, fotos, actas con comunidad) y financieros (ejecución presupuestal).\n\nSe cargan en el Sistema Hermes.\n\nLa DIE de sede hace seguimiento y puede solicitar ajustes antes de remitir a la DNEIPI.","consideraciones":"El incumplimiento de informes puede inhabilitar al director para futuras convocatorias y puede generar procesos de recuperación de recursos. No postergar.","normativa":["Términos de referencia","Instructivo CNES","Sistema Hermes"]},{"id":"n26","shape":"diamond","color":"gray","title":"¿Se requiere prórroga del plazo de ejecución?","sub":"Ejecución · Decisión temprana","x":1456.1801593607108,"y":1686.1363000000003,"w":220,"h":100,"durVal":0,"durUnit":"min","info":"Si el cronograma no puede cumplirse:\n1. El director elabora oficio firmado por él, coinvestigadores y representante de la comunidad\n2. Lo envía a la DIE de sede\n3. La DIE lo eleva al Comité del Fondo Nacional de Extensión Solidaria\n4. El Comité sesiona en fechas fijas","consideraciones":"En el caso real la prórroga se solicitó con tiempo suficiente y fue aprobada. El error a evitar es hacer la solicitud cuando el plazo ya venció.","normativa":["Resolución RG 033 de 2012 (Comité del Fondo Nacional)","Instructivo CNES"]},{"id":"n27","shape":"circle","color":"green","title":"Informe final y cierre del proyecto en Hermes","sub":"Director - Dirección financiera","x":1456.1801593607108,"y":1865.0645000000004,"w":220,"h":88.98917999999993,"durVal":4,"durUnit":"sem","info":"Entrega del informe final técnico (productos, impactos, sostenibilidad) y financiero (ejecución total).\n\nLiquidación de todos los contratos activos.\n\nCierre de la ficha financiera en QUIPU por la Unidad Administrativa.\n\nLa DIE certifica el cierre ante la DNEIPI. El director queda habilitado para participar en futuras convocatorias.","consideraciones":"No dejar contratos activos o recursos sin ejecutar al cierre. Coordinar con la DIE el orden correcto de los pasos: primero técnico, luego financiero, luego Hermes.","normativa":["Instructivo CNES","Sistema Hermes UNAL","Sistema QUIPU"]},{"id":"n29","shape":"diamond","color":"dark","x":306.005504807987,"y":347,"w":170,"h":90,"title":"¿El docente fue notificado con resultado de convocatoria?","sub":"","info":"","consideraciones":"","normativa":[],"durVal":0,"durUnit":"min"},{"id":"n30","shape":"circle","color":"green","x":312.1577405969068,"y":85,"w":160,"h":50,"title":"Inicio","sub":"","info":"","consideraciones":"","normativa":[],"durVal":0,"durUnit":"min"},{"id":"n31","shape":"diamond","color":"dark","x":308.005504807987,"y":202,"w":170,"h":90,"title":"¿El docento continuará con el proyecto?","sub":"","info":"","consideraciones":"","normativa":[],"durVal":0,"durUnit":"min"},{"id":"n32","shape":"circle","color":"gray","x":153.6916093607108,"y":367,"w":92,"h":50,"title":"Fin","sub":"","info":"","consideraciones":"","normativa":[],"durVal":0,"durUnit":"min"},{"id":"n33","shape":"rect","color":"gray","title":"Ejecución técnica del proyecto","sub":"Director del Proyecto","x":1190.6916093607108,"y":48,"w":220,"h":70,"durVal":24,"durUnit":"mes","info":"Actividades con la comunidad, talleres, construcción de infraestructura, producción de resultados.\n\nReuniones periódicas con equipo y con la DIE (gestión de riesgos).","consideraciones":"El seguimiento técnico debe estar acompañado del seguimiento financiero. Un buen ritmo técnico con ejecución financiera lenta puede activar la alerta de cierre financiero.","normativa":["Términos de referencia","Cronograma aprobado en Hermes"]},{"id":"n35","shape":"diamond","color":"gray","x":1215.4890876774512,"y":231.3673121059349,"w":170,"h":90,"title":"¿El docente requiere vincular estudiantes Auxiliares?","sub":"","info":"","consideraciones":"","normativa":[],"durVal":0,"durUnit":"min"},{"id":"n36","shape":"diamond","color":"gray","x":1481.1801593607108,"y":231.3673121059349,"w":170,"h":90,"title":"¿El director requiere la compra de insumos?","sub":"","info":"","consideraciones":"","normativa":[],"durVal":0,"durUnit":"min"},{"id":"n37","shape":"diamond","color":"gray","x":1696.4890876774512,"y":231.3673121059349,"w":170,"h":90,"title":"¿El director requiere la contratación de técnico/profesional o servicios?","sub":"","info":"","consideraciones":"","normativa":[],"durVal":0,"durUnit":"min"},{"id":"n38","shape":"diamond","color":"gray","x":1909.489087677451,"y":231.3673121059349,"w":170,"h":90,"title":"¿El profesor requiere viáticos para algún evento?","sub":"","info":"","consideraciones":"","normativa":[],"durVal":0,"durUnit":"min"},{"id":"n39","shape":"rect","color":"gray","x":1218.9524444919766,"y":400.9040178732853,"w":160,"h":62,"title":"Creación de perfiles e información de vinculación","sub":"","info":"","consideraciones":"","normativa":[],"durVal":30,"durUnit":"min"},{"id":"n40","shape":"rect","color":"gray","x":1219.9524444919766,"y":508.9040178732853,"w":160,"h":60,"title":"Diligenciamiento de formato y envío a DIE","sub":"","info":"","consideraciones":"","normativa":[],"durVal":60,"durUnit":"min"},{"id":"n41","shape":"rect","color":"gray","x":1727.9213821737405,"y":677.9731247958566,"w":160,"h":60,"title":"Es necesario la búsqueda de otro provedor ","sub":"","info":"","consideraciones":"","normativa":[],"durVal":0,"durUnit":"min"},{"id":"n42","shape":"rect","color":"gray","x":1486.1801593607108,"y":399.85343307063056,"w":160,"h":69,"title":"Revisar disponibilidad presupuestal y asignación de rubros ","sub":"","info":"","consideraciones":"","normativa":[],"durVal":30,"durUnit":"min"},{"id":"n45","shape":"diamond","color":"dark","x":308.2608112237642,"y":1598.1095303700474,"w":170,"h":90,"title":"¿Se recomienda sin corrección?","sub":"","info":"","consideraciones":"","normativa":[],"durVal":0,"durUnit":"min"},{"id":"n46","shape":"diamond","color":"dark","x":308.2608112237642,"y":1927.1095303700474,"w":170,"h":90,"title":"¿Se aprueba sin corrección?","sub":"","info":"","consideraciones":"","normativa":[],"durVal":0,"durUnit":"min"},{"id":"n47","shape":"rect","color":"dark","x":84.6591700504647,"y":1603.7788446866412,"w":160,"h":78,"title":"El director del proyecto debe corregir aspecto financiero","sub":"","info":"","consideraciones":"","normativa":[],"durVal":0,"durUnit":"min"},{"id":"n48","shape":"rect","color":"dark","x":82.6591700504647,"y":1942.7788446866412,"w":160,"h":60,"title":"El director del proyecto debe ajustar","sub":"","info":"","consideraciones":"","normativa":[],"durVal":0,"durUnit":"min"},{"id":"n49","shape":"rect","color":"dark","x":313.5011096161144,"y":2082.104066900729,"w":160,"h":119,"title":"Resolución de apertura y distribución presupuestal","sub":"Vicerrector/a","info":"Documento habilitador para abrir ficha en QUIPU y firmar el acta de inicio.\n\nDebe pasar por revisión jurídica antes de ser firmada.\n\nActores: Vicerrectoría de Sede, DIE Sede.","consideraciones":"Sin esta resolución firmada no puede abrirse la ficha financiera en QUIPU ni firmarse el acta de inicio. No asumir que la aprobación verbal del Consejo es suficiente.","normativa":[],"durVal":2,"durUnit":"sem"},{"id":"n51","shape":"rect","color":"dark","x":660.5030518292206,"y":939.9344737018453,"w":218,"h":86,"title":"Apertura de ficha financiera en QUIPU","sub":"Dirección Financiera","info":"Con la Resolución del Vicerrector en mano, la Unidad Administrativa abre el proyecto en QUIPU.\n\nCódigo 317010010xxx · Recurso 21\n\nPlazo máximo: 30 días desde el traslado de recursos.","consideraciones":"El plazo de 30 días desde el traslado es estricto. Si se vence, los recursos pueden revertirse al fondo central y requerir una nueva resolución.","normativa":["Sistema QUIPU UNAL","Circular financiera DNEIPI"],"durVal":3,"durUnit":"d"},{"id":"n52","shape":"rect","color":"dark","x":668.5516692465874,"y":1103.6362145740018,"w":202,"h":60,"title":"Firma del acta de inicio en Hermes","sub":"Director del Proyecto ","info":"Firmada por el Director de Investigación y Extensión de sede y el director del proyecto.\n\nRequiere que todos los avales estén cargados en Hermes antes de firmar.","consideraciones":"Si los avales no están cargados en Hermes (solo en papel) el acta no puede firmarse. Verificar que el sistema refleje todos los documentos.","normativa":["Sistema HERMES UNAL","Instructivo CNES"],"durVal":2,"durUnit":"d"},{"id":"n53","shape":"diamond","color":"red","x":51,"y":934.527862949388,"w":170,"h":90,"title":"¿EL director debe tramitar aval ético?","sub":"","info":"","consideraciones":"","normativa":[],"durVal":0,"durUnit":"min"},{"id":"n54","shape":"diamond","color":"red","x":48,"y":1117.527862949388,"w":170,"h":90,"title":"¿El director debe tramitar permiso?","sub":"","info":"","consideraciones":"","normativa":[],"durVal":0,"durUnit":"min"},{"id":"n56","shape":"diamond","color":"gray","x":1481.1801593607108,"y":1387.0587737458081,"w":170,"h":90,"title":"¿El docente recibió insumos de compra?","sub":"","info":"","consideraciones":"","normativa":[],"durVal":0,"durUnit":"min"},{"id":"n57","shape":"rect","color":"gray","x":1928.001296785745,"y":1393.7540204531665,"w":160,"h":80,"title":"Debe registrarlos en el oficina de almacén. ","sub":"Director del Proyecto","info":"","consideraciones":"","normativa":[],"durVal":0,"durUnit":"min"},{"id":"n59","shape":"rect","color":"gray","x":1707.001296785745,"y":1384.7540204531665,"w":160,"h":97,"title":"Revisar el envío de todos los insumos pactados en la orden de compra","sub":"Director del Proyecto","info":"","consideraciones":"","normativa":[],"durVal":0,"durUnit":"min"},{"id":"n60","shape":"rect","color":"gray","x":2138.0012967857447,"y":1393.7540204531665,"w":160,"h":81,"title":"Diligenciar constancia de satisfacción ","sub":"Director del Proyecto","info":"","consideraciones":"","normativa":[],"durVal":0,"durUnit":"min"},{"id":"n61","shape":"rect","color":"gray","x":2345.0012967857447,"y":1389.7540204531665,"w":226,"h":89,"title":"Envío y notificación al proveedor para que realice la solicitud de pago a través de la Plataforma Central de Pagos.","sub":"Director del Proyecto","info":"","consideraciones":"","normativa":[],"durVal":0,"durUnit":"min"},{"id":"n65","shape":"rect","color":"gray","x":1914.9205524707138,"y":396.1625132709116,"w":160,"h":97,"title":"El profesor debe solicitar aval de comisión ante la dirección acádemica","sub":"Director del Proyecto","info":"","consideraciones":"","normativa":[],"durVal":3,"durUnit":"d"},{"id":"n67","shape":"diamond","color":"gray","x":1466.6801593607108,"y":823.0929159521598,"w":199,"h":104,"title":"¿El director contempla rubros para los insumos cotizados?","sub":"Director del Proyecto","info":"","consideraciones":"","normativa":[],"durVal":0,"durUnit":"min"},{"id":"n68","shape":"rect","color":"gray","x":1486.1801593607108,"y":982.1820586295544,"w":160,"h":92,"title":"Diligenciamiento de formulario y solicitud de CDP ","sub":"Director de Proyecto","info":"La DIE de la sede de La Paz ha diseñado un formulario para que los directores diligencien solicitudes de CDP. ","consideraciones":"","normativa":[],"durVal":10,"durUnit":"min"},{"id":"n72","shape":"rect","color":"gray","x":1725.9777808541528,"y":846.7347669730032,"w":160,"h":60,"title":"El profesor debe hacer cambios de rubros","sub":"","info":"En las situaciones donde el profesor-Director no contemple rubros adecuados para la compra de materiales, la DIE:\n\n1. Creación del rubro correspondiente.\n2. Traslado de rubros. ","consideraciones":"","normativa":[],"durVal":0,"durUnit":"min"}];
+const conns=[{"id":"c25","from":"n2","fromDir":"right","to":"n10","toDir":"left","style":"ortho","arrow":"filled","color":"#059669","width":1,"label":"paralelo","arrowEnd":"filled","dash":"dashed","weight":1.5},{"id":"c34","from":"n2","fromPort":"bottom","to":"n3","toPort":"top","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":1.5,"label":""},{"id":"c35","from":"n3","fromPort":"bottom","to":"n4","toPort":"top","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":1.5,"label":""},{"id":"c36","from":"n4","fromPort":"bottom","to":"n5","toPort":"top","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":1.5,"label":""},{"id":"c37","from":"n5","fromPort":"bottom","to":"n6","toPort":"top","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":1.5,"label":""},{"id":"c38","from":"n6","fromPort":"bottom","to":"n7","toPort":"top","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":1.5,"label":""},{"id":"c42","from":"n31","fromPort":"bottom","to":"n29","toPort":"top","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":1.5,"label":"No"},{"id":"c43","from":"n30","fromPort":"bottom","to":"n31","toPort":"top","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":1.5,"label":""},{"id":"c44","from":"n29","fromPort":"left","to":"n32","toPort":"right","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":1.5,"label":"No"},{"id":"c45","from":"n31","fromPort":"right","to":"n10","toPort":"left","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":1.5,"label":"Sí"},{"id":"c46","from":"n10","fromPort":"bottom","to":"n11","toPort":"top","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":1.5,"label":""},{"id":"c47","from":"n11","fromPort":"bottom","to":"n12","toPort":"top","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":1.5,"label":""},{"id":"c48","from":"n29","fromPort":"bottom","to":"n2","toPort":"top","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":1.5,"label":"Sí"},{"id":"c49","from":"n12","fromPort":"bottom","to":"n13","toPort":"top","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":1.5,"label":""},{"id":"c50","from":"n13","fromPort":"bottom","to":"n14","toPort":"top","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":1.5,"label":""},{"id":"c54","from":"n17","fromPort":"bottom","to":"n18","toPort":"top","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":1.5,"label":""},{"id":"c57","from":"n21","fromPort":"bottom","to":"n22","toPort":"top","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":1.5,"label":""},{"id":"c61","from":"n25","fromPort":"bottom","to":"n26","toPort":"top","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":1.5,"label":""},{"id":"c62","from":"n26","fromPort":"bottom","to":"n27","toPort":"top","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":1.5,"label":""},{"id":"c66","from":"n33","fromPort":"bottom","to":"n35","toPort":"top","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":1.5,"label":""},{"id":"c71","from":"n19","fromPort":"bottom","to":"n20","toPort":"top","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":1.5,"label":""},{"id":"c72","from":"n35","fromPort":"bottom","to":"n39","toPort":"top","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":1.5,"label":"Sí"},{"id":"c73","from":"n35","fromPort":"right","to":"n36","toPort":"left","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":1.5,"label":"No"},{"id":"c74","from":"n40","fromPort":"bottom","to":"n21","toPort":"left","style":"ortho","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":1.5,"label":"","midOffsetX":-0.13041756563302442},{"id":"c75","from":"n39","fromPort":"bottom","to":"n40","toPort":"top","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":1.5,"label":""},{"id":"c76","from":"n20","fromPort":"right","to":"n41","toPort":"left","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":1.5,"label":"No"},{"id":"c78","from":"n36","fromPort":"right","to":"n37","toPort":"left","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":1.5,"label":"No"},{"id":"c79","from":"n36","fromPort":"bottom","to":"n42","toPort":"top","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":1.5,"label":"Sí"},{"id":"c80","from":"n37","fromPort":"bottom","to":"n42","toPort":"right","style":"ortho","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":1.5,"label":"Sí","midOffsetX":0.7202874856709514},{"id":"c81","from":"n42","fromPort":"bottom","to":"n19","toPort":"top","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":1.5,"label":""},{"id":"c82","from":"n17","fromPort":"right","to":"n33","toPort":"left","style":"ortho","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":1.5,"label":""},{"id":"c83","from":"n37","fromPort":"right","to":"n38","toPort":"left","style":"ortho","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":1.5,"label":"No"},{"id":"c84","from":"n7","fromPort":"bottom","to":"n45","toPort":"top","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":2,"label":""},{"id":"c85","from":"n45","fromPort":"bottom","to":"n8","toPort":"top","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":2,"label":"Sí"},{"id":"c86","from":"n8","fromPort":"bottom","to":"n46","toPort":"top","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":2,"label":""},{"id":"c87","from":"n45","fromPort":"left","to":"n47","toPort":"right","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":2,"label":"No"},{"id":"c88","from":"n47","fromPort":"top","to":"n7","toPort":"left","style":"ortho","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":2,"label":""},{"id":"c90","from":"n46","fromPort":"left","to":"n48","toPort":"right","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":2,"label":""},{"id":"c91","from":"n48","fromPort":"top","to":"n8","toPort":"left","style":"ortho","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":2,"label":""},{"id":"c93","from":"n46","fromPort":"bottom","to":"n49","toPort":"top","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":2,"label":""},{"id":"c96","from":"n14","fromPort":"bottom","to":"n51","toPort":"top","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":2,"label":""},{"id":"c97","from":"n49","fromPort":"right","to":"n51","toPort":"left","style":"ortho","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":2,"label":""},{"id":"c98","from":"n51","fromPort":"bottom","to":"n52","toPort":"top","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":2,"label":""},{"id":"c99","from":"n52","fromPort":"bottom","to":"n17","toPort":"top","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":2,"label":""},{"id":"c100","from":"n4","fromPort":"left","to":"n53","toPort":"right","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":2,"label":""},{"id":"c101","from":"n5","fromPort":"left","to":"n54","toPort":"right","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":2,"label":""},{"id":"c102","from":"n22","fromPort":"bottom","to":"n56","toPort":"top","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":2,"label":""},{"id":"c104","from":"n59","fromPort":"right","to":"n57","toPort":"left","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":2,"label":""},{"id":"c105","from":"n56","fromPort":"right","to":"n59","toPort":"left","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":2,"label":"SÍ"},{"id":"c106","from":"n60","fromPort":"right","to":"n61","toPort":"left","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":2,"label":""},{"id":"c107","from":"n57","fromPort":"right","to":"n60","toPort":"left","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":2,"label":""},{"id":"c110","from":"n38","fromPort":"bottom","to":"n65","toPort":"top","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":2,"label":""},{"id":"c111","from":"n20","fromPort":"bottom","to":"n67","toPort":"top","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":2,"label":"Sí"},{"id":"c113","from":"n67","fromPort":"bottom","to":"n68","toPort":"top","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":2,"label":"Sí"},{"id":"c114","from":"n68","fromPort":"bottom","to":"n21","toPort":"top","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":2,"label":""},{"id":"c116","from":"n65","fromPort":"bottom","to":"n68","toPort":"right","style":"ortho","dash":"dashed","arrowEnd":"filled","color":"#1a1917","weight":2,"label":"","midOffsetX":-0.1763031767100074},{"id":"c119","from":"n67","fromPort":"right","to":"n72","toPort":"left","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":2,"label":"No "},{"id":"c120","from":"n72","fromPort":"bottom","to":"n68","toPort":"right","style":"ortho","dash":"dashed","arrowEnd":"filled","color":"#1a1917","weight":2,"label":"","midOffsetX":2.295082631570267},{"id":"c123","from":"n56","fromPort":"bottom","to":"n25","toPort":"top","style":"straight","dash":"solid","arrowEnd":"filled","color":"#1a1917","weight":2,"label":"No"}];
+const ICONS={"rect":"📋","diamond":"❓","circle":"⭕","cylinder":"🗄️","parallelogram":"↔️","hexagon":"⚙️"};
+
+function curvedCPs(c,p1,p2){
+  const dx=p2.x-p1.x,bx=c.curveBX||0,by=c.curveBY||0;
+  return{cx1:p1.x+dx*.5+bx,cy1:p1.y+by,cx2:p2.x-dx*.5+bx,cy2:p2.y+by};
+}
+function getOrthoRoute(c,p1,p2){
+  const fp=c.fromPort||'right',tp=c.toPort||'left';
+  const x1=p1.x,y1=p1.y,x2=p2.x,y2=p2.y,dx=x2-x1,dy=y2-y1;
+  const hDep=fp==='left'||fp==='right',hArr=tp==='left'||tp==='right';
+  if(hDep&&hArr){
+    const isBack=fp==='right'?x2<x1+10:x2>x1-10;
+    const def=isBack?x1+(fp==='right'?40:-40):x1+dx/2;
+    const midX=c.midOffsetX!=null?x1+c.midOffsetX:def;
+    return{type:'HVH',midX,d:'M'+x1+','+y1+' L'+midX+','+y1+' L'+midX+','+y2+' L'+x2+','+y2,
+      lastVec:{dx:x2-midX,dy:0},firstVec:{dx:fp==='right'?1:-1,dy:0}};
+  }
+  if(!hDep&&!hArr){
+    const isBack=fp==='bottom'?y2<y1+10:y2>y1-10;
+    const def=isBack?y1+(fp==='bottom'?40:-40):y1+dy/2;
+    const midY=c.midOffsetY!=null?y1+c.midOffsetY:def;
+    return{type:'VHV',midY,d:'M'+x1+','+y1+' L'+x1+','+midY+' L'+x2+','+midY+' L'+x2+','+y2,
+      lastVec:{dx:0,dy:y2-midY},firstVec:{dx:0,dy:fp==='bottom'?1:-1}};
+  }
+  if(hDep)return{type:'HV',d:'M'+x1+','+y1+' L'+x2+','+y1+' L'+x2+','+y2,
+    lastVec:{dx:0,dy:y2-y1},firstVec:{dx:dx,dy:0}};
+  return{type:'VH',d:'M'+x1+','+y1+' L'+x1+','+y2+' L'+x2+','+y2,
+    lastVec:{dx:x2-x1,dy:0},firstVec:{dx:0,dy:dy}};
+}
+function arrivalAngle(c,p1,p2){
+  if(c.style==='ortho'||c.style==='step'){const r=getOrthoRoute(c,p1,p2);return Math.atan2(r.lastVec.dy,r.lastVec.dx);}
+  if(c.style==='curved'){const{cx2,cy2}=curvedCPs(c,p1,p2);return Math.atan2(p2.y-cy2,p2.x-cx2);}
+  return Math.atan2(p2.y-p1.y,p2.x-p1.x);
+}
+function departureAngle(c,p1,p2){
+  if(c.style==='ortho'||c.style==='step'){const r=getOrthoRoute(c,p1,p2);return Math.atan2(r.firstVec.dy,r.firstVec.dx);}
+  if(c.style==='curved'){const{cx1,cy1}=curvedCPs(c,p1,p2);return Math.atan2(cy1-p1.y,cx1-p1.x);}
+  return Math.atan2(p2.y-p1.y,p2.x-p1.x);
+}
+function shortenEnd(a,b,dist){
+  const dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy);
+  if(len<dist+1)return b;
+  return{x:b.x-dx/len*dist,y:b.y-dy/len*dist};
+}
+function buildPath(c,p1,p2){
+  const x1=p1.x,y1=p1.y,x2=p2.x,y2=p2.y;
+  if(c.style==='curved'){const{cx1,cy1,cx2,cy2}=curvedCPs(c,p1,p2);return{d:'M'+x1+','+y1+' C'+cx1+','+cy1+' '+cx2+','+cy2+' '+x2+','+y2,p1,p2};}
+  if(c.style==='ortho'||c.style==='step'){const r=getOrthoRoute(c,p1,p2);return{...r,p1,p2};}
+  return{d:'M'+x1+','+y1+' L'+x2+','+y2,p1,p2};
+}
+function buildShortPath(c,p1,p2,dist){
+  if(c.style==='ortho'||c.style==='step'){
+    const r=getOrthoRoute(c,p1,p2);if(dist===0)return r.d;
+    const lv=r.lastVec,len=Math.hypot(lv.dx,lv.dy);if(len<dist+1)return r.d;
+    const ex=p2.x-lv.dx/len*dist,ey=p2.y-lv.dy/len*dist;
+    if(r.type==='HVH')return 'M'+p1.x+','+p1.y+' L'+r.midX+','+p1.y+' L'+r.midX+','+p2.y+' L'+ex+','+p2.y;
+    if(r.type==='VHV')return 'M'+p1.x+','+p1.y+' L'+p1.x+','+r.midY+' L'+p2.x+','+r.midY+' L'+p2.x+','+ey;
+    if(r.type==='HV') return 'M'+p1.x+','+p1.y+' L'+p2.x+','+p1.y+' L'+p2.x+','+ey;
+                      return 'M'+p1.x+','+p1.y+' L'+p1.x+','+p2.y+' L'+ex+','+p2.y;
+  }
+  if(c.style==='curved'){
+    const{cx1,cy1,cx2,cy2}=curvedCPs(c,p1,p2);if(dist===0)return 'M'+p1.x+','+p1.y+' C'+cx1+','+cy1+' '+cx2+','+cy2+' '+p2.x+','+p2.y;
+    const p2s=shortenEnd({x:cx2,y:cy2},p2,dist);return 'M'+p1.x+','+p1.y+' C'+cx1+','+cy1+' '+cx2+','+cy2+' '+p2s.x+','+p2s.y;
+  }
+  if(dist===0)return 'M'+p1.x+','+p1.y+' L'+p2.x+','+p2.y;
+  const p2s=shortenEnd(p1,p2,dist);return 'M'+p1.x+','+p1.y+' L'+p2s.x+','+p2s.y;
+}
+function drawArrow(svg,type,px,py,angle,col,w){
+  const size=7+Math.max(1,w)*1.5,cos=Math.cos(angle),sin=Math.sin(angle);
+  const rot=(x,y)=>[px+x*cos-y*sin,py+x*sin+y*cos];
+  if(type==='arrow'||type==='both'){
+    const[ax,ay]=rot(-size,-size*.45),[bx,by]=rot(-size,size*.45);
+    const el=document.createElementNS('http://www.w3.org/2000/svg','polyline');
+    el.setAttribute('points',ax+','+ay+' '+px+','+py+' '+bx+','+by);
+    el.setAttribute('fill','none');el.setAttribute('stroke',col);
+    el.setAttribute('stroke-width',Math.max(1.5,w*.85));
+    el.setAttribute('stroke-linecap','round');el.setAttribute('stroke-linejoin','round');
+    svg.appendChild(el);
+  }else if(type==='filled'){
+    const[ax,ay]=rot(-size,-size*.45),[bx,by]=rot(-size,size*.45);
+    const el=document.createElementNS('http://www.w3.org/2000/svg','polygon');
+    el.setAttribute('points',px+','+py+' '+ax+','+ay+' '+bx+','+by);
+    el.setAttribute('fill',col);svg.appendChild(el);
+  }else if(type==='circle'){
+    const r=size*.55,[cx2,cy2]=rot(-r,0);
+    const el=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    el.setAttribute('cx',cx2);el.setAttribute('cy',cy2);el.setAttribute('r',r);
+    el.setAttribute('fill','#fff');el.setAttribute('stroke',col);el.setAttribute('stroke-width',Math.max(1.5,w*.8));
+    svg.appendChild(el);
+  }else if(type==='diamond-end'){
+    const hs=size*.5,[tx,ty]=rot(0,0),[rx,ry]=rot(-hs,-hs*.6),[bx2,by2]=rot(-hs*2,0),[lx2,ly2]=rot(-hs,hs*.6);
+    const el=document.createElementNS('http://www.w3.org/2000/svg','polygon');
+    el.setAttribute('points',tx+','+ty+' '+rx+','+ry+' '+bx2+','+by2+' '+lx2+','+ly2);
+    el.setAttribute('fill','#fff');el.setAttribute('stroke',col);el.setAttribute('stroke-width',Math.max(1.2,w*.7));
+    svg.appendChild(el);
+  }
+}
+
+function durLbl(n){
+  if(!n.durVal||n.durVal<=0)return null;
+  const v=n.durVal;
+  const lbl={min:v===1?'minuto':'minutos',d:v===1?'día':'días',sem:v===1?'semana':'semanas',mes:v===1?'mes':'meses'};
+  return v+' '+(lbl[n.durUnit]||'minutos');
+}
+function bS(s,w,h,c){const f=c.fill,st=c.stroke,l=c.light||c.fill;switch(s){case 'rect':return '<rect x="1" y="1" width="'+(w-2)+'" height="'+(h-2)+'" rx="4" ry="4" fill="'+f+'" stroke="'+st+'" stroke-width="1.5"/>';case 'diamond':return '<polygon points="'+w/2+',2 '+(w-2)+','+h/2+' '+w/2+','+(h-2)+' 2,'+h/2+'" fill="'+f+'" stroke="'+st+'" stroke-width="1.5"/>';case 'circle':{const rx=Math.min(w/2-1,h/2-1);return '<rect x="1" y="1" width="'+(w-2)+'" height="'+(h-2)+'" rx="'+(h/2-1)+'" ry="'+(h/2-1)+'" fill="'+f+'" stroke="'+st+'" stroke-width="1.5"/>';}case 'cylinder':{const rx=w/2-2,ry=Math.min(10,h*0.15);return '<rect x="2" y="'+ry+'" width="'+(w-4)+'" height="'+(h-ry*2)+'" fill="'+f+'" stroke="'+st+'" stroke-width="1.5"/><ellipse cx="'+w/2+'" cy="'+ry+'" rx="'+rx+'" ry="'+ry+'" fill="'+l+'" stroke="'+st+'" stroke-width="1.5"/><ellipse cx="'+w/2+'" cy="'+(h-ry)+'" rx="'+rx+'" ry="'+ry+'" fill="'+f+'" stroke="'+st+'" stroke-width="1.5"/>';}case 'parallelogram':{const sk=20;return '<polygon points="'+sk+',1 '+(w-1)+',1 '+(w-sk)+','+(h-1)+' 1,'+(h-1)+'" fill="'+f+'" stroke="'+st+'" stroke-width="1.5"/>';}case 'hexagon':{const q=w*.22;return '<polygon points="'+q+',2 '+(w-q)+',2 '+(w-2)+','+h/2+' '+(w-q)+','+(h-2)+' '+q+','+(h-2)+' 2,'+h/2+'" fill="'+f+'" stroke="'+st+'" stroke-width="1.5"/>';}default:return '<rect x="1" y="1" width="'+(w-2)+'" height="'+(h-2)+'" rx="4" fill="'+f+'" stroke="'+st+'" stroke-width="1.5"/>';}}
+function pP(n,dir){switch(dir){case 'top':return{x:n.x+n.w/2,y:n.y};case 'bottom':return{x:n.x+n.w/2,y:n.y+n.h};case 'left':return{x:n.x,y:n.y+n.h/2};case 'right':return{x:n.x+n.w,y:n.y+n.h/2};default:return{x:n.x+n.w,y:n.y+n.h/2};}}
+function dA(d){switch(d){case 'dashed':return '8 5';case 'dotted':return '2 5';case 'dashdot':return '10 4 2 4';default:return null;}}
+function renderInfoRich(text,container){
+  container.innerHTML='';
+  if(!text){container.innerHTML='<span style="color:#9b9890;font-style:italic">Sin descripción registrada.</span>';return;}
+  const lines=text.split('\n');
+  lines.forEach((line,i)=>{
+    if(!line.trim()&&i>0){container.appendChild(document.createElement('br'));return;}
+    const match=line.match(/^(\p{Emoji_Presentation}|\p{Extended_Pictographic})\s*/u);
+    if(match){
+      const div=document.createElement('div');div.className='iline';
+      const ico=document.createElement('span');ico.className='iico';ico.textContent=match[0].trim();
+      const txt=document.createElement('span');txt.textContent=line.slice(match[0].length);
+      div.appendChild(ico);div.appendChild(txt);container.appendChild(div);
+    }else{
+      let plain=container.lastChild;
+      if(!plain||!plain.classList||!plain.classList.contains('msec-bd-plain')){
+        plain=document.createElement('div');plain.className='msec-bd-plain';
+        plain.style.cssText='font-size:13.5px;line-height:1.75;white-space:pre-wrap;color:#1a1917';
+        container.appendChild(plain);
+      }
+      plain.textContent+=(plain.textContent?'\n':'')+line;
+    }
+  });
+}
+function renderSections(n, container){
+  container.innerHTML='';
+  const shapeLabel={rect:'Proceso',diamond:'Decisión',circle:'Inicio / Fin',cylinder:'Base de datos',parallelogram:'Entrada / Salida',hexagon:'Preparación'};
+  // Descripción
+  const s1=document.createElement('div');s1.className='msec';
+  s1.innerHTML='<div class="msec-hd">Descripción</div>';
+  const b1=document.createElement('div');b1.className='msec-bd'+(n.info?'':' empty');
+  if(n.info)renderInfoRich(n.info,b1);
+  else b1.textContent='Sin descripción registrada.';
+  s1.appendChild(b1);container.appendChild(s1);
+  // Consideraciones (solo si tiene contenido)
+  if(n.consideraciones&&n.consideraciones.trim()){
+    const s2=document.createElement('div');s2.className='msec';
+    s2.innerHTML='<div class="msec-hd alt">Consideraciones</div>';
+    const b2=document.createElement('div');b2.className='msec-bd';
+    b2.textContent=n.consideraciones;
+    s2.appendChild(b2);container.appendChild(s2);
+  }
+  // Normativa (solo si tiene items)
+  if(n.normativa&&n.normativa.length){
+    const s3=document.createElement('div');s3.className='msec';
+    s3.innerHTML='<div class="msec-hd neutral">Normativa que aplica</div>';
+    const b3=document.createElement('div');b3.className='msec-bd';
+    n.normativa.forEach(it=>{const r=document.createElement('div');r.className='norm-item';r.textContent=it;b3.appendChild(r);});
+    s3.appendChild(b3);container.appendChild(s3);
+  }
+}
+// ── Left sidebar (project info) ──
+const lsb=document.getElementById('lsb');
+let lsbOpen=false;
+function toggleLsb(){
+  lsbOpen=!lsbOpen;
+  lsb.classList.toggle('open',lsbOpen);
+}
+// Auto-open if project has content
+(function(){
+  const hasContent=true;
+  if(hasContent){ lsbOpen=true; lsb.classList.add('open'); }
+})();
+
+// ── Right sidebar (node info) ──
+const sb=document.getElementById('sb');
+let sbOpen=false;
+function toggleSb(){
+  sbOpen=!sbOpen;
+  sb.classList.toggle('open',sbOpen);
+}
+function om(n){
+  const shapeLabel={rect:'Proceso',diamond:'Decisión',circle:'Inicio / Fin',cylinder:'Base de datos',parallelogram:'Entrada / Salida',hexagon:'Preparación'};
+  document.getElementById('sb-type').textContent=shapeLabel[n.shape]||'Elemento';
+  document.getElementById('sb-title').textContent=n.title||'Sin título';
+  const subEl=document.getElementById('sb-sub');
+  subEl.textContent=n.sub||''; subEl.style.display=n.sub?'':'none';
+  const dl=durLbl(n);
+  const durEl=document.getElementById('sb-dur');
+  if(dl){durEl.style.display='flex';document.getElementById('sb-dur-txt').textContent=dl;}
+  else{durEl.style.display='none';}
+  renderSections(n,document.getElementById('sb-body'));
+  document.getElementById('sb-empty').style.display='none';
+  const cnt=document.getElementById('sb-content');
+  cnt.style.display='flex'; cnt.style.flexDirection='column'; cnt.style.flex='1'; cnt.style.overflow='hidden';
+  if(!sbOpen){sbOpen=true;sb.classList.add('open');}
+}
+function cm(){
+  document.getElementById('sb-empty').style.display='flex';
+  document.getElementById('sb-content').style.display='none';
+}
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    if(sbOpen) toggleSb();
+    else if(lsbOpen) toggleLsb();
+  }
+});
+
+// ── Startup hint toast ──
+window.addEventListener('DOMContentLoaded',()=>{
+  const toast=document.getElementById('hint-toast');
+  setTimeout(()=>toast.classList.add('hidden'),3500);
+  setTimeout(()=>toast.style.display='none',4200);
+});
+
+// ── Hover tooltip ──
+const tip=document.getElementById('tip');
+const shapeLabels={rect:'Proceso',diamond:'Decisión',circle:'Inicio / Fin',cylinder:'Base de datos',parallelogram:'Entrada / Salida',hexagon:'Preparación'};
+let tipTimer=null;
+function showTip(n,e){
+  clearTimeout(tipTimer);
+  document.getElementById('tip-title').textContent=n.title||'Sin título';
+  document.getElementById('tip-type').textContent=shapeLabels[n.shape]||'Elemento';
+  const dl=durLbl(n);
+  const durEl=document.getElementById('tip-dur');
+  if(dl){durEl.style.display='flex';document.getElementById('tip-dur-txt').textContent=dl;}
+  else{durEl.style.display='none';}
+  const infoEl=document.getElementById('tip-info');
+  if(n.info&&n.info.trim()){
+    const firstLine=n.info.split('\n').find(l=>l.trim())||'';
+    infoEl.textContent=firstLine.length>80?firstLine.slice(0,80)+'…':firstLine;
+    infoEl.style.display='block';
+  } else { infoEl.style.display='none'; }
+  positionTip(e);
+  tip.classList.add('show');
+}
+function positionTip(e){
+  const pad=12,tw=270,th=tip.offsetHeight||120;
+  let x=e.clientX+pad, y=e.clientY+pad;
+  if(x+tw>window.innerWidth-pad) x=e.clientX-tw-pad;
+  if(y+th>window.innerHeight-pad) y=e.clientY-th-pad;
+  tip.style.left=x+'px'; tip.style.top=y+'px';
+}
+function hideTip(){tipTimer=setTimeout(()=>tip.classList.remove('show'),120);}
+
+window.addEventListener('DOMContentLoaded',()=>{
+  const cv=document.getElementById('cv'),svg=document.getElementById('sl');
+  nodes.forEach(n=>{
+    const c=PAL[n.color]||PAL.blue;
+    const el=document.createElement('div');
+    el.className='fn';
+    el.setAttribute('data-shape', n.shape);
+    el.style.cssText='left:'+n.x+'px;top:'+n.y+'px;width:'+n.w+'px;height:'+n.h+'px';
+    const dl=durLbl(n);
+    const badge=dl?'<div class="db"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>'+dl+'</div>':'';
+    const shapeFactor2={diamond:0.54,hexagon:0.64,parallelogram:0.72};
+    const sf2=shapeFactor2[n.shape]||1.0;
+    const usableW2=n.w*sf2;
+    const tlen2=(n.title||'').length;
+    const cpl2=Math.max(6,Math.floor(usableW2/7.5));
+    let fs2=12.5;
+    if(n.shape==='diamond'){if(tlen2>cpl2*3)fs2=9;else if(tlen2>cpl2*2)fs2=10.5;else if(tlen2>cpl2)fs2=11.5;}
+    else if(sf2<1.0){if(tlen2>cpl2*3)fs2=10;else if(tlen2>cpl2*2)fs2=11;}
+    if(n.fontSize&&n.fontSize>0){fs2=n.fontSize;}
+    const ff2=n.fontFamily||"'DM Sans',sans-serif";
+    const subFs2=Math.max(7,fs2-2);
+    el.innerHTML='<svg class="sh">'+bS(n.shape,n.w,n.h,c)+'</svg><div class="lw"><div class="nt" style="color:'+c.text+';font-size:'+fs2+'px;font-family:'+ff2+'">'+escH(n.title||'')+'</div>'+(n.sub?'<div class="ns" style="color:'+c.text+';font-size:'+subFs2+'px;font-family:'+ff2+'">'+escH(n.sub)+'</div>':'')+'</div>'+badge;
+    el.addEventListener('click',()=>{ if(window._didPan&&window._didPan()) return; om(n); });
+    el.addEventListener('mouseenter',e=>showTip(n,e));
+    el.addEventListener('mousemove',e=>{if(tip.classList.contains('show'))positionTip(e);});
+    el.addEventListener('mouseleave',hideTip);
+    cv.appendChild(el);
+  });
+  setTimeout(()=>{
+    conns.forEach(c=>{
+      const fn=nodes.find(x=>x.id===c.from),tn=nodes.find(x=>x.id===c.to);if(!fn||!tn)return;
+      const col=c.color||'#64748b',w=c.weight||2,da=dA(c.dash||'solid');
+      const p1=pP(fn,c.fromPort||'right'),p2=pP(tn,c.toPort||'left');
+      const route=buildPath(c,p1,p2);
+      const endAngle=arrivalAngle(c,p1,p2);
+      const startAngle=departureAngle(c,p1,p2)+Math.PI;
+      const off=(c.arrowEnd!=='none'&&c.arrowEnd!=='circle'&&c.arrowEnd!=='diamond-end')?w+6:0;
+      const dShort=off>0?buildShortPath(c,p1,p2,off):route.d;
+      const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+      path.setAttribute('d',c.arrowEnd!=='none'?dShort:route.d);
+      path.setAttribute('fill','none');path.setAttribute('stroke',col);path.setAttribute('stroke-width',w);
+      path.setAttribute('stroke-linecap','round');path.setAttribute('stroke-linejoin','round');
+      if(da)path.setAttribute('stroke-dasharray',da);
+      svg.appendChild(path);
+      if(c.arrowEnd!=='none')drawArrow(svg,c.arrowEnd==='both'?'arrow':c.arrowEnd,p2.x,p2.y,endAngle,col,w);
+      if(c.arrowEnd==='both')drawArrow(svg,'arrow',p1.x,p1.y,startAngle,col,w);
+      if(c.label){
+        let autoX,autoY;
+        if(c.style==='ortho'||c.style==='step'){
+          const lr=getOrthoRoute(c,p1,p2);
+          if(lr.type==='HVH'){autoX=(p1.x+lr.midX)/2;autoY=p1.y+(p2.y<=p1.y?16:-16);}
+          else if(lr.type==='VHV'){autoX=p1.x+(p2.x>=p1.x?-20:20);autoY=(p1.y+lr.midY)/2;}
+          else if(lr.type==='HV'){autoX=(p1.x+p2.x)/2;autoY=p1.y+(p2.y<=p1.y?16:-16);}
+          else{autoX=p1.x+(p2.x>=p1.x?-20:20);autoY=(p1.y+p2.y)/2;}
+        }else{
+          autoX=p1.x+(p2.x-p1.x)*.25;autoY=p1.y+(p2.y-p1.y)*.25;
+          const dl=Math.hypot(p2.x-p1.x,p2.y-p1.y)||1;
+          autoX+=-(p2.y-p1.y)/dl*20;autoY+=(p2.x-p1.x)/dl*20;
+        }
+        const lx=autoX+(c.labelOffsetX||0),ly=autoY+(c.labelOffsetY||0);
+        const pw=Math.max(32,c.label.length*6.8+20),ph=20;
+        const bg=document.createElementNS('http://www.w3.org/2000/svg','rect');
+        bg.setAttribute('x',lx-pw/2);bg.setAttribute('y',ly-ph/2);
+        bg.setAttribute('width',pw);bg.setAttribute('height',ph);bg.setAttribute('rx',ph/2);
+        bg.setAttribute('fill','#fff');bg.setAttribute('stroke',col);bg.setAttribute('stroke-width','1.5');
+        bg.setAttribute('filter','drop-shadow(0 1px 3px rgba(0,0,0,0.12))');svg.appendChild(bg);
+        const tx=document.createElementNS('http://www.w3.org/2000/svg','text');
+        tx.setAttribute('x',lx);tx.setAttribute('y',ly);tx.setAttribute('text-anchor','middle');
+        tx.setAttribute('dominant-baseline','central');
+        tx.setAttribute('font-family',"'DM Sans',system-ui,sans-serif");
+        tx.setAttribute('font-size','11');tx.setAttribute('font-weight','600');tx.setAttribute('fill',col);
+        tx.textContent=c.label;svg.appendChild(tx);
+      }
+    });
+  },80);
+});
+function escH(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ── PAN & ZOOM ──
+(function(){
+  const wrap=document.getElementById('wrap');
+  const cv=document.getElementById('cv');
+  const W=2619.0012967857447, H=2249.104066900729;
+  let scale=1, ox=0, oy=0;
+  let panning=false, didPan=false, startX=0, startY=0, startOx=0, startOy=0;
+
+  function applyT(){ cv.style.transform='translate('+ox+'px,'+oy+'px) scale('+scale+')'; }
+
+  function fitToWindow(){
+    const pad=60;
+    scale=Math.min((window.innerWidth-pad*2)/W,(window.innerHeight-pad*2)/H,1);
+    ox=(window.innerWidth-W*scale)/2;
+    oy=(window.innerHeight-H*scale)/2;
+    applyT();
+  }
+  fitToWindow();
+  window.addEventListener('resize',fitToWindow);
+
+  wrap.addEventListener('wheel',function(e){
+    e.preventDefault();
+    const factor=e.deltaY<0?1.12:1/1.12;
+    const newScale=Math.min(5,Math.max(0.1,scale*factor));
+    ox=e.clientX-(e.clientX-ox)*(newScale/scale);
+    oy=e.clientY-(e.clientY-oy)*(newScale/scale);
+    scale=newScale;
+    applyT();
+  },{passive:false});
+
+  wrap.addEventListener('mousedown',function(e){
+    if(e.button!==0)return;
+    panning=true; didPan=false;
+    startX=e.clientX; startY=e.clientY;
+    startOx=ox; startOy=oy;
+    wrap.classList.add('panning');
+  });
+  window.addEventListener('mousemove',function(e){
+    if(!panning)return;
+    const dx=e.clientX-startX, dy=e.clientY-startY;
+    if(Math.abs(dx)>4||Math.abs(dy)>4) didPan=true;
+    ox=startOx+dx; oy=startOy+dy;
+    applyT();
+  });
+  window.addEventListener('mouseup',function(e){
+    if(e.button!==0)return;
+    panning=false;
+    wrap.classList.remove('panning');
+  });
+
+  window._didPan=function(){ return didPan; };
+})();
+</script></body></html>
